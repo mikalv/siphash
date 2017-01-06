@@ -1,18 +1,31 @@
+/**
+  Copyright © 2017 Odzhan. All Rights Reserved.
 
-/*
-   SipHash reference C implementation
+  Redistribution and use in source and binary forms, with or without
+  modification, are permitted provided that the following conditions are
+  met:
 
-   Copyright (c) 2016 Jean-Philippe Aumasson <jeanphilippe.aumasson@gmail.com>
+  1. Redistributions of source code must retain the above copyright
+  notice, this list of conditions and the following disclaimer.
 
-   To the extent possible under law, the author(s) have dedicated all copyright
-   and related and neighboring rights to this software to the public domain
-   worldwide. This software is distributed without any warranty.
+  2. Redistributions in binary form must reproduce the above copyright
+  notice, this list of conditions and the following disclaimer in the
+  documentation and/or other materials provided with the distribution.
 
-   You should have received a copy of the CC0 Public Domain Dedication along
-   with
-   this software. If not, see
-   <http://creativecommons.org/publicdomain/zero/1.0/>.
- */
+  3. The name of the author may not be used to endorse or promote products
+  derived from this software without specific prior written permission.
+
+  THIS SOFTWARE IS PROVIDED BY AUTHORS "AS IS" AND ANY EXPRESS OR
+  IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+  DISCLAIMED. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT,
+  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+  (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+  SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+  HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+  STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+  POSSIBILITY OF SUCH DAMAGE. */
 
 #include <stdint.h>
 #include <stdio.h>
@@ -24,7 +37,10 @@
 
 #define ROTL(x, b) (uint32_t)(((x) << (b)) | ((x) >> (32 - (b))))
 
-void XXSIPROUND(uint32_t v[4], uint32_t w, uint8_t last)
+void SIPROUND(
+    uint32_t v[4], 
+    uint32_t w, 
+    uint8_t last)
 {
   int i, rnds=cROUNDS;
   
@@ -53,7 +69,7 @@ void XXSIPROUND(uint32_t v[4], uint32_t w, uint8_t last)
   v[0] ^= w;
 }
 
-int sh32(
+uint32_t hsh32(
     const uint8_t *data, 
     const size_t inlen, 
     const uint8_t *key) 
@@ -79,7 +95,7 @@ int sh32(
 
     for (; in != end; in += 4) {
       m = ((uint32_t*)in)[0];
-      XXSIPROUND(v, m, 0);
+      SIPROUND(v, m, 0);
     }
 
     while (--left >= 0) {
@@ -87,7 +103,7 @@ int sh32(
     }
 
     for (i=0; i<2; i++) {
-      XXSIPROUND(v, b, i);
+      SIPROUND(v, b, i);
       b = 0;
     }
     
