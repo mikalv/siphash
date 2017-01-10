@@ -1,5 +1,5 @@
 ;
-;  Copyright © 2017 Odzhan. All Rights Reserved.
+;  Copyright © 2017 Odzhan, Peter Ferrie. All Rights Reserved.
 ;
 ;  Redistribution and use in source and binary forms, with or without
 ;  modification, are permitted provided that the following conditions are
@@ -30,7 +30,7 @@
 ; -----------------------------------------------
 ; Half SipHash for 32-bit hashes
 ;
-; size: 148 bytes
+; size: 142 bytes
 ;
 ; global calls use cdecl convention
 ;
@@ -65,12 +65,12 @@ hsh32x:
     ; initialize state
     lodsd                    ; eax = k0
     mov    v0, eax           ; v0  = k0 
-    mov    v2, eax           ; v2  = k0
+    xor    eax, 0x6c796765
+    xchg   v2, eax           ; v2  = k0
     lodsd                    ; eax = k1
     mov    v1, eax           ; v1  = k1
-    mov    v3, eax           ; v3  = k1
-    xor    v2, 0x6c796765
-    xor    v3, 0x74656462
+    xor    eax, 0x74656462
+    xchg   v3, eax           ; v3  = k1
     
     ; update state in 4-byte blocks
     pop    ecx               ; ecx = inlen
@@ -78,35 +78,32 @@ hsh32x:
     push   ecx               ; save inlen
     shr    ecx, 2            ; inlen /= 4 
     jz     shx_l2
+    clc    
 shx_l0:
     lodsd
 shx_l1:
-    clc    
     call   SIPROUND
     loop   shx_l0
 shx_l2:    
+    xchg   ecx, eax
     pop    ecx               ; restore inlen
-    mov    eax, ecx
     push   edx               ; save edx
     cdq                      ; edx = 0    
-    shl    eax, 24           ; eax = inlen << 24
+    shrd   eax, ecx, 8       ; eax = inlen << 24
     and    ecx, 3            ; inlen &= 3
+    je     shx_l4            ; if (left > 0) 
 shx_l3:
-    dec    ecx               ; if (--left >= 0) 
-    js     shx_l4            ;   goto shx_l4
     shl    edx, 8            ; t <<= 8
-    mov    dl, byte[esi+ecx] ; t |= in[left]
-    jmp    shx_l3
+    mov    dl, byte[esi+ecx-1] ; t |= in[left]
+    loop   shx_l3            ; while (--left > 0) 
 shx_l4:
     or     eax, edx          ; b |= t
     pop    edx               ; restore edx
-    clc                      ; CF=0  
 shx_l5:    
-    pushfd                   ; save flags
     call   SIPROUND
-    popfd                    ; restore flags
-    cmc                      ; CF=1 for last round
-    jc     shx_l5
+    stc                      ; CF=1 for last round
+    dec    ecx
+    jnp    shx_l5
     xor    v1, v3            ; v[1] ^= v[3]
     mov    [esp+28], v1      ; pushad_t._eax = v1
     popad
